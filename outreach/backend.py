@@ -17,6 +17,9 @@ import google.oauth2.credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+import uuid
+import socket
+import dns.resolver
 
 # --- Constants & Config ---
 LEAD_SCHEMA = ["id", "name", "company", "raw_source", "website", "mode", "contact_email", "draft_status", "send_status", "address", "profession", "phone", "draft_body"]
@@ -30,6 +33,21 @@ FUZZY_MAPPINGS = {
     "profession": ["profession", "title", "role", "job"],
     "phone": ["phone", "mobile", "contact_number"]
 }
+
+PERSONAL_DOMAINS = ["gmail.com", "outlook.com", "yahoo.com", "hotmail.com", "icloud.com", "me.com", "aol.com"]
+JOB_HUNTING_PREFIXES = ["recruiting", "talent", "hr", "hiring", "careers", "jobs", "people"]
+BUSINESS_SALES_PREFIXES = ["info", "hello", "partnerships", "founders", "ceo", "cfo", "contact", "sales", "bizdev"]
+
+def is_valid_email(email: str) -> bool:
+    """Basic regex validation for email."""
+    if not email or not isinstance(email, str): return False
+    return bool(re.match(r"[^@]+@[^@]+\.[^@]+", email))
+
+def is_generic_email(email: str) -> bool:
+    """Checks if the email is a known placeholder or clearly fake."""
+    if not email: return True
+    placeholders = ["test@test.com", "example@example.com", "admin@domain.com", "user@email.com"]
+    return email.lower() in placeholders or "example" in email.lower() or "test" in email.lower()
 
 def extract_text_from_file(file) -> str:
     """Extracts text from PDF, DOCX, or TXT files."""
@@ -106,32 +124,153 @@ def process_upload(file, mode: str = "BUSINESS_SALES") -> pd.DataFrame:
     
     return df[LEAD_SCHEMA]
 
-def predict_email_logic(website: str, mode: str) -> str:
-    """Implements dual-mode email prediction strategy."""
+def predict_and_verify_email(name: str, website: str, mode: str) -> str:
+    """Predicts a list of potential emails and returns the first valid one via SMTP."""
     if not website or pd.isna(website):
         return ""
     
     domain = re.sub(r'https?://(www\.)?', '', website).split('/')[0]
-    if not domain:
+    if not domain or domain == "0":
         return ""
 
+    patterns = []
+    
+    # 1. Generic Role-Based Patterns
     if mode == "JOB_HUNTING":
-        # Strategy for hiring managers
-        return f"careers@{domain}" # Basic fallback, LLM can refine
+        patterns += [f"recruiting@{domain}", f"jobs@{domain}", f"hiring@{domain}", f"careers@{domain}"]
     else:
-        # Strategy for business sales
-        return f"info@{domain}"
+        patterns += [f"ceo@{domain}", f"cfo@{domain}", f"founder@{domain}", f"contact@{domain}"]
+
+    # 2. Person-Specific Patterns (if Name is available)
+    if name and not is_missing(name):
+        parts = name.lower().split()
+        if len(parts) >= 2:
+            first, last = parts[0], parts[-1]
+            patterns += [
+                f"{first}@{domain}",
+                f"{first}.{last}@{domain}",
+                f"{first[0]}{last}@{domain}",
+                f"{first}{last[0]}@{domain}",
+                f"{first}_{last}@{domain}"
+            ]
+        elif len(parts) == 1:
+            patterns.append(f"{parts[0]}@{domain}")
+
+    # Remove duplicates
+    patterns = list(dict.fromkeys(patterns))
+
+    # 3. SMTP Verification Handshake
+    for email in patterns:
+        try:
+            status = verify_email_smtp_direct(email)
+            if status == 'VALID':
+                return email
+        except:
+            continue
+            
+    # Fallback to the first role-based pattern if none are "VALID" but we need a placeholder
+    return patterns[0] if patterns else ""
+
+def verify_email_smtp_direct(email: str, sender_email: str = "verify@outreachbrain.local") -> str:
+    """Performs an SMTP RCPT TO handshake to verify if an email exists."""
+    try:
+        domain = email.split('@')[1]
+        # DNS MX Lookup
+        records = dns.resolver.resolve(domain, 'MX')
+        mx_record = sorted(records, key=lambda r: r.preference)[0].exchange.to_text()
+        
+        # SMTP Handshake
+        host = socket.gethostname()
+        server = smtplib.SMTP(timeout=5)
+        server.connect(mx_record)
+        server.helo(host)
+        server.mail(sender_email)
+        code, message = server.rcpt(email)
+        server.quit()
+        
+        if code == 250:
+            return 'VALID'
+        elif code == 550:
+            return 'INVALID'
+        else:
+            return 'RISKY'
+    except:
+        return 'RISKY'
+
+def smart_enrich_single_lead(row_dict: Dict[str, Any]) -> str:
+    """Processes a single lead for enrichment and returns the found email (or blank)."""
+    current_email = str(row_dict.get("contact_email", "")).strip()
+    
+    # Validation Check
+    if current_email and is_valid_email(current_email) and not is_generic_email(current_email):
+        return current_email
+
+    name = row_dict.get("name", "")
+    company = row_dict.get("company", "")
+    website = row_dict.get("website", "")
+    mode = row_dict.get("mode", "BUSINESS_SALES")
+    
+    if not website and not company:
+        return current_email
+
+    domain = ""
+    if website and not is_missing(website):
+        domain = re.sub(r'https?://(www\.)?', '', website).split('/')[0]
+    elif company and not is_missing(company):
+        domain = company.lower().replace(" ", "") + ".com"
+    
+    if not domain or domain == "0":
+        return current_email
+
+    candidates = []
+    if name and not is_missing(name):
+        parts = name.lower().split()
+        first = parts[0] if parts else ""
+        last = parts[-1] if len(parts) > 1 else ""
+        for p_domain in PERSONAL_DOMAINS:
+            if first and last:
+                candidates.append({"email": f"{first}.{last}@{p_domain}", "tier": 1})
+                candidates.append({"email": f"{first}@{p_domain}", "tier": 1})
+            elif first:
+                candidates.append({"email": f"{first}@{p_domain}", "tier": 1})
+
+    prefixes = JOB_HUNTING_PREFIXES if mode == "JOB_HUNTING" else BUSINESS_SALES_PREFIXES
+    for prefix in prefixes:
+        candidates.append({"email": f"{prefix}@{domain}", "tier": 2})
+
+    if name and not is_missing(name):
+        parts = name.lower().split()
+        if len(parts) >= 2:
+            f, l = parts[0], parts[-1]
+            candidates.append({"email": f"{f}@{domain}", "tier": 3})
+            candidates.append({"email": f"{f}.{l}@{domain}", "tier": 3})
+            candidates.append({"email": f"{f[0]}{l}@{domain}", "tier": 3})
+    
+    candidates.sort(key=lambda x: x["tier"])
+    
+    seen = set()
+    unique_candidates = []
+    for c in candidates:
+        if c["email"] not in seen:
+            unique_candidates.append(c)
+            seen.add(c["email"])
+
+    for c in unique_candidates:
+        status = verify_email_smtp_direct(c["email"])
+        if status == 'VALID':
+            return c["email"]
+    
+    return unique_candidates[0]["email"] if unique_candidates else current_email
+
+def smart_enrich_leads(df: pd.DataFrame, api_key: str = None) -> pd.DataFrame:
+    """Batch enrichment (legacy/internal)."""
+    for index, row in df.iterrows():
+        df.at[index, "contact_email"] = smart_enrich_single_lead(row.to_dict())
+    return df
 
 def enrich_leads(df: pd.DataFrame) -> pd.DataFrame:
-    """Predicts contact emails based on User Intent (mode)."""
-    if "contact_email" not in df.columns:
-        df["contact_email"] = ""
-
-    mask = (df["contact_email"] == "") | (df["contact_email"].isna())
-    df.loc[mask, "contact_email"] = df[mask].apply(
-        lambda x: predict_email_logic(x["website"], x["mode"]), axis=1
-    )
-    return df
+    """Legacy helper, now routes to smart_enrich_leads."""
+    return smart_enrich_leads(df)
 
 def generate_search_prompt(query: str) -> str:
     """Expert OSINT Research Protocol."""
@@ -153,12 +292,25 @@ def generate_search_prompt(query: str) -> str:
 def get_strategist_response(client, messages, global_context) -> str:
     """Chatbot logic with SaaS Context grounding."""
     system_instruction = f"""
-    You are the 'Outreach Strategic Brain'. Your goal is to help refine outreach payloads.
-    Current Global Context: {global_context}
+    You are the 'Outreach Strategic Brain', the central processing unit for this outreach platform.
+    
+    CRITICAL INSTRUCTION: Your primary knowledge base is the 'LEARNED INTELLIGENCE' provided below. 
+    You MUST prioritize any uploaded documents, web research, or vault lead data found in this context.
+    
+    MENTORSHIP PROTOCOL: You are working FOR the user described in the context. 
+    Your goal is to bridge the gap between their SKILLSET and the LEADS in the vault.
+    Provide proactive, professional, and sophisticated suggestions on how the user can leverage their expertise to convert these leads.
+    
+    GLOBAL SYSTEM CONTEXT:
+    ---
+    {global_context}
+    ---
+    
+    Tone: Sophisticated, direct, outcome-oriented, and proactively helpful.
     """
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
+            model='gemini-2.0-flash',
             contents=messages,
             config=types.GenerateContentConfig(system_instruction=system_instruction)
         )
@@ -173,7 +325,7 @@ def search_and_extract_leads(query: str, api_key: str, mode: str, custom_prompt:
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
+            model='gemini-2.0-flash',
             contents=prompt,
             config=types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())])
         )
@@ -207,15 +359,15 @@ def search_and_extract_leads(query: str, api_key: str, mode: str, custom_prompt:
     except Exception as e:
         raise Exception(f"Search failed: {str(e)}")
 
-def generate_email_drafts(df: pd.DataFrame, api_key: str, sender_context: str) -> pd.DataFrame:
-    """LLM Agent for personalized drafting using SaaS attributes."""
+def generate_single_email_draft(row: Dict[str, Any], api_key: str, sender_context: str, custom_prompt: str = None) -> str:
+    """Generates a single personalized email draft."""
     client = genai.Client(api_key=api_key)
-
-    for index, row in df.iterrows():
-        if row.get("draft_status") == "GENERATED": continue
-
-        mode_instruction = "Focus on hiring managers and human resources." if row["mode"] == "JOB_HUNTING" else "Focus on business owners and decision makers."
-        
+    
+    if custom_prompt:
+        # User defined prompt
+        prompt = custom_prompt
+    else:
+        # Default fallback prompt
         prompt = f"""
         Role: Senior Sales Development Representative (SDR)
         Target Person: {row['name']}
@@ -239,17 +391,61 @@ def generate_email_drafts(df: pd.DataFrame, api_key: str, sender_context: str) -
         OUTPUT: Return ONLY the email body.
         """
 
-        try:
-            response = client.models.generate_content(
-                model='gemini-2.0-flash-exp',
-                contents=prompt,
-                config=types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())])
-            )
-            df.at[index, "draft_body"] = response.text
-            df.at[index, "draft_status"] = "GENERATED"
-            time.sleep(0.5)
-        except:
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(tools=[types.Tool(google_search=types.GoogleSearch())])
+        )
+        return response.text
+    except Exception as e:
+        return f"Drafting Error: {str(e)}"
+
+def refine_email_draft(row: Dict[str, Any], api_key: str, current_draft: str, feedback: str, sender_context: str) -> str:
+    """Refines an existing email draft based on feedback."""
+    client = genai.Client(api_key=api_key)
+    prompt = f"""
+    Current Email Draft:
+    ---
+    {current_draft}
+    ---
+    
+    User Feedback for Refinement:
+    "{feedback}"
+    
+    Context:
+    Target Person: {row['name']}
+    Target Company: {row['company']}
+    Sender's Context: {sender_context}
+    
+    TASK: Refine the email draft based strictly on the feedback provided.
+    Maintain a professional and direct tone.
+    
+    OUTPUT: Return ONLY the refined email body.
+    """
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=prompt,
+        )
+        return response.text
+    except Exception as e:
+        return f"Refinement Error: {str(e)}"
+
+def generate_email_drafts(df: pd.DataFrame, api_key: str, sender_context: str, custom_prompt: str = None) -> pd.DataFrame:
+    """LLM Agent for personalized drafting using SaaS attributes."""
+    for index, row in df.iterrows():
+        if row.get("draft_status") == "GENERATED": continue
+        
+        draft = generate_single_email_draft(row.to_dict(), api_key, sender_context, custom_prompt)
+        
+        if "Drafting Error" in draft:
             df.at[index, "draft_status"] = "FAILED"
+        else:
+            df.at[index, "draft_body"] = draft
+            df.at[index, "draft_status"] = "GENERATED"
+        
+        time.sleep(0.5)
 
     return df
 
@@ -276,12 +472,24 @@ def fill_missing_info(row: Dict[str, Any], api_key: str) -> Dict[str, str]:
     if not missing_fields:
         return {}
 
+    found_info = {}
+    
+    # 1. Immediate Prediction & Verification for Emails
+    if "contact_email" in missing_fields and not is_missing(row.get("website")):
+        predicted_email = predict_and_verify_email(name, row.get("website"), mode)
+        if predicted_email:
+            found_info["contact_email"] = predicted_email
+            missing_fields.remove("contact_email")
+            
+    if not missing_fields:
+        return found_info
+
     # Mission-specific targeting logic
     target_description = ""
     if mode == "JOB_HUNTING":
-        target_description = "Specifically look for recruiting emails, HR contacts, or their professional personal email address."
+        target_description = "Specifically look for recruiting@, talent@, careers@, or hiring@ emails. If the entity is a person, try to find their direct professional email."
     else:
-        target_description = "Specifically look for contact emails, business owner emails, or general 'connect' emails for the team."
+        target_description = "Specifically look for ceo@, cfo@, owner@, or founder@ emails. Prioritize the direct contact information of the executive leadership."
 
     prompt = f"""
     You are an expert OSINT researcher. Your mission is to find missing business data for:
@@ -305,7 +513,7 @@ def fill_missing_info(row: Dict[str, Any], api_key: str) -> Dict[str, str]:
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
+            model='gemini-2.0-flash',
             contents=prompt,
             config=types.GenerateContentConfig(
                 tools=[types.Tool(google_search=types.GoogleSearch())]
@@ -322,14 +530,16 @@ def fill_missing_info(row: Dict[str, Any], api_key: str) -> Dict[str, str]:
         if json_match:
             raw_json = json.loads(json_match.group(0))
             normalized_json = {k.lower(): v for k, v in raw_json.items()}
-            return {field: normalized_json.get(field.lower(), "") for field in missing_fields}
+            for field in missing_fields:
+                found_info[field] = normalized_json.get(field.lower(), "")
+            return found_info
     except Exception as e:
         try:
             print(f"OSINT Error for {name}: {e}")
         except:
             pass
     
-    return {}
+    return found_info
 
 # --- Google OAuth2 & Gmail API ---
 
@@ -434,6 +644,18 @@ def save_vault(df: pd.DataFrame, file_path: str = "vault.csv"):
     """Persists the vault DataFrame to a local CSV."""
     if df is not None:
         df.to_csv(file_path, index=False)
+
+def update_vault_lead(lead_id: str, updates: Dict[str, str], file_path: str = "vault.csv"):
+    """Updates specific fields for a lead in the vault CSV."""
+    df = load_vault(file_path)
+    if df is not None and lead_id in df['id'].values:
+        idx = df.index[df['id'] == lead_id][0]
+        for field, value in updates.items():
+            if field in df.columns:
+                df.at[idx, field] = value
+        save_vault(df, file_path)
+        return True
+    return False
 
 def load_vault(file_path: str = "vault.csv") -> pd.DataFrame:
     """Loads the vault from a local CSV if it exists."""
