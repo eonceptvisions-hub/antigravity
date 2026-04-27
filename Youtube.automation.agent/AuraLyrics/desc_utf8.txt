@@ -1,0 +1,13 @@
+﻿ Join Community: https://www.skool.com/topnotch-programmer-9569/about?ref=813d1a5f82fc44c7a6f4d3724b4a1cb7
+
+Here I am creating a small script or bot that can automatically upload videos for you on youtube. This script is built in python programming language and uses Youtube Data API V3.
+
+GET THE COURSE FOR SOCIAL MEDIA AUTOMATION: https://bit.ly/3VwBc6k
+
+Get the code from the video 
+Download Full Code Here:https://github.com/redianmarku/youtube-video-uploader
+
+Contact me
+LinkedIn: https://www.linkedin.com/in/rediandev/
+
+#python #youtubeapi #bot
