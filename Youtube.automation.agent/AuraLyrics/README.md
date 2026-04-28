@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+# Aura-lyrics-bot
+Basically a repositarty that created automated youtube music videos!
+=======
 # 🛸 AuraLyrics
 
 Autonomous Lyric Video Production Pipeline — zero-cost, fully automated.
@@ -139,3 +143,4 @@ new → failed (after 3 retries, song is skipped)
 - **ffmpeg** — needed for audio/video processing (install with `winget install Gyan.FFmpeg`)
 - **No GPU required** — entire pipeline runs on CPU
 - **No API keys** — everything uses free, open sources
+>>>>>>> 6ff8aec (Initial commit for Aura-lyrics-bot)
