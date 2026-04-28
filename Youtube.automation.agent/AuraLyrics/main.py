@@ -26,7 +26,7 @@ from agents.scraper import ScraperAgent
 from agents.asset_hunter import AssetHunterAgent
 from agents.brain import BrainAgent
 from agents.visual_engine import VisualEngineAgent
-from agents.distributor import DistributorAgent
+from agents.distributor_playwright import PlaywrightDistributorAgent as DistributorAgent
 
 logger = get_console_logger("main")
 
@@ -116,7 +116,7 @@ def run_visual_engine(args) -> int:
 
 def run_distributor(args) -> int:
     """Run the distributor agent."""
-    distributor = DistributorAgent()
+    distributor = DistributorAgent(headless=True)
     return distributor.run(limit=args.limit)
 
 

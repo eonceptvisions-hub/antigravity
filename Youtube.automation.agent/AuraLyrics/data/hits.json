@@ -302,12 +302,12 @@
     "title": "E85",
     "artist": "Don Toliver",
     "id": "4b05",
-    "status": "rendered",
+    "status": "uploaded",
     "added_at": "2026-04-25T10:03:32.118568+00:00",
     "weeks_on_chart": 11,
     "peak_position": 15,
     "source": "billboard",
-    "updated_at": "2026-04-26T12:16:29.857916+00:00",
+    "updated_at": "2026-04-27T04:11:19.153125+00:00",
     "duration_seconds": 153.216
   },
   {
@@ -315,12 +315,12 @@
     "title": "Be By You",
     "artist": "Luke Combs",
     "id": "dcc5",
-    "status": "rendered",
+    "status": "uploaded",
     "added_at": "2026-04-25T10:03:32.181819+00:00",
     "weeks_on_chart": 9,
     "peak_position": 12,
     "source": "billboard",
-    "updated_at": "2026-04-26T12:17:59.272132+00:00",
+    "updated_at": "2026-04-27T04:11:46.049296+00:00",
     "duration_seconds": 198.456
   },
   {
@@ -328,12 +328,12 @@
     "title": "Homewrecker",
     "artist": "sombr",
     "id": "0bf9",
-    "status": "rendered",
+    "status": "uploaded",
     "added_at": "2026-04-25T10:03:32.200837+00:00",
     "weeks_on_chart": 10,
     "peak_position": 22,
     "source": "billboard",
-    "updated_at": "2026-04-26T12:20:41.768955+00:00",
+    "updated_at": "2026-04-27T04:12:19.746326+00:00",
     "duration_seconds": 254.016
   },
   {
@@ -341,12 +341,12 @@
     "title": "Beauty And A Beat",
     "artist": "Justin Bieber Featuring Nicki Minaj",
     "id": "5106",
-    "status": "rendered",
+    "status": "uploaded",
     "added_at": "2026-04-25T10:03:32.220064+00:00",
     "weeks_on_chart": 25,
     "peak_position": 5,
     "source": "billboard",
-    "updated_at": "2026-04-26T12:20:51.559033+00:00",
+    "updated_at": "2026-04-27T04:12:52.472653+00:00",
     "duration_seconds": 228.36
   },
   {
@@ -354,12 +354,12 @@
     "title": "Dandelion",
     "artist": "Ella Langley",
     "id": "f7ce",
-    "status": "downloaded",
+    "status": "uploaded",
     "added_at": "2026-04-25T10:03:32.238615+00:00",
     "weeks_on_chart": 11,
     "peak_position": 27,
     "source": "billboard",
-    "updated_at": "2026-04-26T12:01:57.243012+00:00",
+    "updated_at": "2026-04-27T04:13:22.090909+00:00",
     "duration_seconds": 240.408
   },
   {
@@ -367,12 +367,12 @@
     "title": "Pinky Up",
     "artist": "KATSEYE",
     "id": "40fa",
-    "status": "downloaded",
+    "status": "uploaded",
     "added_at": "2026-04-25T10:03:49.265064+00:00",
     "weeks_on_chart": 1,
     "peak_position": 28,
     "source": "billboard",
-    "updated_at": "2026-04-26T12:02:03.236252+00:00",
+    "updated_at": "2026-04-27T04:13:43.701345+00:00",
     "duration_seconds": 131.808
   },
   {
@@ -380,12 +380,12 @@
     "title": "The Fall",
     "artist": "Cody Johnson",
     "id": "9bf6",
-    "status": "downloaded",
+    "status": "uploaded",
     "added_at": "2026-04-26T12:01:22.468539+00:00",
     "weeks_on_chart": 29,
     "peak_position": 26,
     "source": "billboard",
-    "updated_at": "2026-04-26T12:02:12.184883+00:00",
+    "updated_at": "2026-04-27T04:14:08.939483+00:00",
     "duration_seconds": 199.656
   },
   {
@@ -397,60 +397,152 @@
     "added_at": "2026-04-26T12:01:22.493128+00:00",
     "weeks_on_chart": 6,
     "peak_position": 4,
-    "source": "billboard"
+    "source": "billboard",
+    "retry_count": 1,
+    "last_error": "Download failed or output file not found: C:\\Users\\arinc\\OneDrive\\Documents\\antigravity\\Youtube.automation.agent\\AuraLyrics\\raw_assets\\30_Harry_Styles_American_Girls_b4e2.mp3",
+    "last_error_at": "2026-04-27T03:46:50.781343+00:00"
   },
   {
     "rank": 31,
     "title": "Body",
     "artist": "Don Toliver",
     "id": "4a7d",
-    "status": "new",
+    "status": "rendered",
     "added_at": "2026-04-26T12:01:22.514797+00:00",
     "weeks_on_chart": 11,
     "peak_position": 14,
-    "source": "billboard"
+    "source": "billboard",
+    "updated_at": "2026-04-27T04:04:05.690937+00:00",
+    "duration_seconds": 155.784
   },
   {
     "rank": 32,
     "title": "Pop Dat Thang",
     "artist": "DaBaby",
     "id": "2e88",
-    "status": "new",
+    "status": "rendered",
     "added_at": "2026-04-26T12:01:22.533885+00:00",
     "weeks_on_chart": 11,
     "peak_position": 29,
-    "source": "billboard"
+    "source": "billboard",
+    "updated_at": "2026-04-27T04:03:08.205311+00:00",
+    "duration_seconds": 138.456
   },
   {
     "rank": 33,
     "title": "Change My Mind",
     "artist": "Riley Green",
     "id": "760f",
-    "status": "new",
+    "status": "rendered",
     "added_at": "2026-04-26T12:01:22.551947+00:00",
     "weeks_on_chart": 11,
     "peak_position": 27,
-    "source": "billboard"
+    "source": "billboard",
+    "updated_at": "2026-04-27T04:04:55.878071+00:00",
+    "duration_seconds": 204.336
   },
   {
     "rank": 34,
     "title": "White Keys",
     "artist": "Dominic Fike",
     "id": "3c40",
-    "status": "new",
+    "status": "rendered",
     "added_at": "2026-04-26T12:01:22.568878+00:00",
     "weeks_on_chart": 8,
     "peak_position": 32,
-    "source": "billboard"
+    "source": "billboard",
+    "updated_at": "2026-04-27T04:00:59.254072+00:00",
+    "duration_seconds": 144.12
   },
   {
     "rank": 35,
     "title": "Freakin' Out",
     "artist": "Dexter And The Moonrocks",
     "id": "666d",
-    "status": "new",
+    "status": "downloaded",
     "added_at": "2026-04-26T12:01:22.586960+00:00",
     "weeks_on_chart": 4,
+    "peak_position": 35,
+    "source": "billboard",
+    "updated_at": "2026-04-27T03:47:35.273952+00:00",
+    "duration_seconds": 226.008
+  },
+  {
+    "rank": 36,
+    "title": "Die On This Hill",
+    "artist": "Sienna Spiro",
+    "id": "ad5b",
+    "status": "downloaded",
+    "added_at": "2026-04-27T03:45:55.467384+00:00",
+    "weeks_on_chart": 17,
+    "peak_position": 19,
+    "source": "billboard",
+    "updated_at": "2026-04-27T03:47:46.483581+00:00",
+    "duration_seconds": 217.128
+  },
+  {
+    "rank": 37,
+    "title": "Let 'Em Know",
+    "artist": "T.I.",
+    "id": "5937",
+    "status": "new",
+    "added_at": "2026-04-27T03:45:55.528935+00:00",
+    "weeks_on_chart": 12,
+    "peak_position": 33,
+    "source": "billboard"
+  },
+  {
+    "rank": 38,
+    "title": "I Ain't Coming Back",
+    "artist": "Morgan Wallen Featuring Post Malone",
+    "id": "b71f",
+    "status": "new",
+    "added_at": "2026-04-27T03:46:26.577921+00:00",
+    "weeks_on_chart": 44,
+    "peak_position": 8,
+    "source": "billboard"
+  },
+  {
+    "rank": 39,
+    "title": "Fever Dream",
+    "artist": "Alex Warren",
+    "id": "a15f",
+    "status": "new",
+    "added_at": "2026-04-27T03:46:26.635486+00:00",
+    "weeks_on_chart": 7,
+    "peak_position": 21,
+    "source": "billboard"
+  },
+  {
+    "rank": 40,
+    "title": "Earrings",
+    "artist": "Malcolm Todd",
+    "id": "8b7d",
+    "status": "new",
+    "added_at": "2026-04-27T03:46:26.697461+00:00",
+    "weeks_on_chart": 7,
+    "peak_position": 40,
+    "source": "billboard"
+  },
+  {
+    "rank": 41,
+    "title": "When Did You Get Hot?",
+    "artist": "Sabrina Carpenter",
+    "id": "507b",
+    "status": "new",
+    "added_at": "2026-04-27T03:46:26.767329+00:00",
+    "weeks_on_chart": 31,
+    "peak_position": 17,
+    "source": "billboard"
+  },
+  {
+    "rank": 42,
+    "title": "Lush Life",
+    "artist": "Zara Larsson",
+    "id": "5568",
+    "status": "new",
+    "added_at": "2026-04-27T03:46:26.843550+00:00",
+    "weeks_on_chart": 18,
     "peak_position": 35,
     "source": "billboard"
   }

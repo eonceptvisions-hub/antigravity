@@ -90,31 +90,53 @@ class VisualEngineAgent:
             
             draw = ImageDraw.Draw(bg)
             
-            # Simple dark overlay for the whole image (better for minimalist look)
-            overlay = Image.new("RGBA", (THUMB_W, THUMB_H), (0, 0, 0, 100)) # 100/255 opacity
+            # Cleaner Vertical Gradient Overlay (Darker at bottom for text contrast)
+            overlay = Image.new("RGBA", (THUMB_W, THUMB_H), (0, 0, 0, 0))
+            overlay_draw = ImageDraw.Draw(overlay)
+            for y in range(THUMB_H):
+                # Smooth transition to darkness at the bottom
+                alpha = int(220 * (y / THUMB_H)) if y > THUMB_H * 0.3 else 0
+                if alpha > 0:
+                    overlay_draw.line([(0, y), (THUMB_W, y)], fill=(0, 0, 0, alpha))
             bg.paste(overlay, (0, 0), overlay)
+            
+            draw = ImageDraw.Draw(bg)
             
             # Load fonts
             try:
-                font_title = ImageFont.truetype(FONT_PATH, 80)
-                font_artist = ImageFont.truetype(FONT_PATH, 45)
+                font_title = ImageFont.truetype(FONT_PATH, 85)
+                font_artist = ImageFont.truetype(FONT_PATH, 48)
+                font_badge = ImageFont.truetype(FONT_PATH, 32)
             except:
                 font_title = ImageFont.load_default()
                 font_artist = font_title
+                font_badge = font_title
             
             center_x = THUMB_W // 2
-            center_y = THUMB_H // 2
             
-            # Wrap title if too long
-            wrapped_title = "\n".join(textwrap.wrap(title.upper(), width=25))
+            # Wrap title
+            wrapped_title = "\n".join(textwrap.wrap(title.upper(), width=22))
             
-            # Song title (centered, white, bold)
-            draw.text((center_x, center_y - 20), wrapped_title, font=font_title,
+            # 1. Cleaner "LYRICS" Badge at the top
+            badge_text = "🎵  L Y R I C S"
+            # Subtle glow/shadow for badge
+            draw.text((center_x + 1, 151), badge_text, font=font_badge, fill=(0, 0, 0, 100), anchor="mm")
+            draw.text((center_x, 150), badge_text, font=font_badge, 
+                      fill=(255, 215, 0, 255), anchor="mm") # Premium Gold
+            
+            # 2. Song Title (Clean white with soft shadow)
+            # Offset shadow
+            draw.text((center_x + 4, 354), wrapped_title, font=font_title,
+                      fill=(0, 0, 0, 150), anchor="mm", align="center")
+            draw.text((center_x, 350), wrapped_title, font=font_title,
                       fill=(255, 255, 255, 255), anchor="mm", align="center")
             
-            # Artist name (below title, white, slightly smaller)
-            draw.text((center_x, center_y + 80), artist, font=font_artist,
-                      fill=(255, 255, 255, 200), anchor="mm", align="center")
+            # 3. Artist Name (Golden accent, clean)
+            artist_text = artist.upper()
+            draw.text((center_x + 2, 532), artist_text, font=font_artist,
+                      fill=(0, 0, 0, 120), anchor="mm", align="center")
+            draw.text((center_x, 530), artist_text, font=font_artist,
+                      fill=(255, 215, 0, 230), anchor="mm", align="center")
             
             # Save as JPEG
             bg.save(output_path, "JPEG", quality=95)

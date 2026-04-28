@@ -1,0 +1,60 @@
+name: AuraLyrics Automation
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # Every 6 hours
+  workflow_dispatch:      # Manual trigger
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for git commits
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Python Dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+
+      - name: Inject YouTube Cookies
+        env:
+          YT_COOKIES: ${{ secrets.YT_COOKIES }}
+        run: |
+          echo "$YT_COOKIES" > cookies.json
+
+      - name: Run AuraLyrics Pipeline
+        run: |
+          # Process 3 songs per run to stay within storage limits
+          python main.py --limit 3
+
+      - name: Cleanup Large Files
+        run: |
+          # Delete raw assets and renders before pushing back to repo
+          rm -rf raw_assets/*
+          rm -rf renders/*
+          # Keep only essential files
+          echo "Cleanup complete."
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "AuraLyrics Bot"
+          git config --global user.email "bot@auralyrics.local"
+          git add data/hits.json logs/upload_history.json logs/system_health.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated update: $(date +'%Y-%m-%d %H:%M')" && git push)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
